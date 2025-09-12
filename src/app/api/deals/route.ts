@@ -14,11 +14,14 @@ export async function GET(req: Request) {
     );
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as DealStatus | null;
+    const pipelineId = searchParams.get("pipelineId") ?? undefined;
     const deals = await prisma.deal.findMany({
       where: {
         organizationId: membership.organizationId,
         ...(status ? { status } : {}),
+        ...(pipelineId ? { pipelineId } : {}),
       },
+      include: { company: true, contact: true, owner: true },
     });
     return NextResponse.json(deals);
   } catch (e) {

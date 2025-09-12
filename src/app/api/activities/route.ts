@@ -14,10 +14,12 @@ export async function GET(req: Request) {
     );
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") as ActivityType | null;
+    const dealId = searchParams.get("dealId") ?? undefined;
     const activities = await prisma.activity.findMany({
       where: {
         organizationId: membership.organizationId,
         ...(type ? { type } : {}),
+        ...(dealId ? { dealId } : {}),
       },
     });
     return NextResponse.json(activities);
