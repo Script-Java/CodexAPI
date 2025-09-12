@@ -158,6 +158,7 @@ model Contact {
   activities   Activity[]
   notes        Note[]
   tags         Tag[]        @relation("ContactTags", through: _ContactTags)
+  files        File[]
 
   @@index([organizationId])
   @@index([email])
@@ -213,6 +214,7 @@ model Deal {
   stage        Stage        @relation(fields: [stageId], references: [id], onDelete: Cascade)
   activities   Activity[]
   notes        Note[]
+  files        File[]
   tags         Tag[]        @relation("DealTags", through: _DealTags)
 
   @@index([organizationId])
@@ -308,6 +310,8 @@ model File {
   id             String      @id @default(cuid())
   organizationId String
   ownerId        String?
+  dealId         String?
+  contactId      String?
   bucket         FileBucket
   key            String
   url            String
@@ -317,7 +321,11 @@ model File {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   owner        User?        @relation("FileOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
+  @@index([dealId])
+  @@index([contactId])
 }
 
