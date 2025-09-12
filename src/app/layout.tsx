@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import "./globals.css";
+import { ToastProviders, Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "serverless-crm",
@@ -10,7 +11,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-background font-sans antialiased">
+        <ToastProviders>
+          {children}
+          <Toaster />
+        </ToastProviders>
+      </body>
     </html>
   );
 }
