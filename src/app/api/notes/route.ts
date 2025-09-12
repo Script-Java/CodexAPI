@@ -5,6 +5,7 @@ import { noteSchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(req: Request) {
   try {
@@ -50,6 +51,14 @@ export async function POST(req: Request) {
         organizationId: membership.organizationId,
         authorId: user.id,
       },
+    });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "CREATE",
+      entityType: "Note",
+      entityId: note.id,
+      after: note,
     });
     return NextResponse.json(note, { status: 201 });
   } catch (e) {

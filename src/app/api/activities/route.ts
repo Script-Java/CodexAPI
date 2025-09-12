@@ -5,6 +5,7 @@ import { activitySchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole, ActivityType } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
+import { createAuditLog } from "@/lib/audit";
 import {
   startOfDay,
   endOfDay,
@@ -77,6 +78,14 @@ export async function POST(req: Request) {
         organizationId: membership.organizationId,
         ownerId: user.id,
       },
+    });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "CREATE",
+      entityType: "Activity",
+      entityId: activity.id,
+      after: activity,
     });
     return NextResponse.json(activity, { status: 201 });
   } catch (e) {

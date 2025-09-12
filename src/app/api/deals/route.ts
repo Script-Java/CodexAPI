@@ -5,6 +5,7 @@ import { dealSchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole, DealStatus } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
+import { createAuditLog } from "@/lib/audit";
 
 export async function GET(req: Request) {
   try {
@@ -51,6 +52,14 @@ export async function POST(req: Request) {
         organizationId: membership.organizationId,
         ownerId: user.id,
       },
+    });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "CREATE",
+      entityType: "Deal",
+      entityId: deal.id,
+      after: deal,
     });
     return NextResponse.json(deal, { status: 201 });
   } catch (e) {
