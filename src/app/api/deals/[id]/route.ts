@@ -9,6 +9,24 @@ interface Params {
   params: { id: string };
 }
 
+export async function GET(_req: Request, { params }: Params) {
+  try {
+    const { membership } = await requireRole(
+      MembershipRole.REP,
+      MembershipRole.ADMIN,
+      MembershipRole.OWNER
+    );
+    const deal = await prisma.deal.findFirst({
+      where: { id: params.id, organizationId: membership.organizationId },
+      include: { company: true, contact: true, owner: true, stage: true },
+    });
+    if (!deal) return new Response("Not Found", { status: 404 });
+    return NextResponse.json(deal);
+  } catch (e) {
+    return handleApiError(e);
+  }
+}
+
 export async function PATCH(req: Request, { params }: Params) {
   try {
     const { membership } = await requireRole(

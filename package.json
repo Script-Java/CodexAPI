@@ -19,6 +19,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hook-form": "^7.48.0",
+    "@hello-pangea/dnd": "^16.2.0",
     "recharts": "^2.7.2",
     "zod": "^3.22.4",
     "papaparse": "^5.4.1",
