@@ -34,7 +34,9 @@
     "tailwind-merge": "^2.0.0",
     "@auth/prisma-adapter": "^1.0.5",
     "bcryptjs": "^2.4.3",
-    "@vercel/blob": "^0.23.0"
+    "@vercel/blob": "^0.23.0",
+    "@upstash/ratelimit": "^1.0.0",
+    "@upstash/redis": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

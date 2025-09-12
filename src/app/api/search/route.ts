@@ -3,14 +3,22 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
+import { rateLimitSearch } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   try {
-    const { membership } = await requireRole(
+    const { membership, user } = await requireRole(
       MembershipRole.REP,
       MembershipRole.ADMIN,
       MembershipRole.OWNER
     );
+    const { success } = await rateLimitSearch(req, user.id);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429 }
+      );
+    }
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q");
     if (!q) {

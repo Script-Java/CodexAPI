@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { dealSchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole, DealStatus } from "@prisma/client";
+import { rateLimitWrite } from "@/lib/rate-limit";
 
 export async function GET(req: Request) {
   try {
@@ -36,6 +37,13 @@ export async function POST(req: Request) {
       MembershipRole.ADMIN,
       MembershipRole.OWNER
     );
+    const { success } = await rateLimitWrite(req, user.id);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429 }
+      );
+    }
     const data = dealSchema.parse(await req.json());
     const deal = await prisma.deal.create({
       data: {
