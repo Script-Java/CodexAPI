@@ -4,10 +4,16 @@ import { requireRole } from "@/lib/auth";
 import { activitySchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole, ActivityType } from "@prisma/client";
+import {
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+} from "date-fns";
 
 export async function GET(req: Request) {
   try {
-    const { membership } = await requireRole(
+    const { membership, user } = await requireRole(
       MembershipRole.REP,
       MembershipRole.ADMIN,
       MembershipRole.OWNER
@@ -15,12 +21,33 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") as ActivityType | null;
     const dealId = searchParams.get("dealId") ?? undefined;
+    const due = searchParams.get("due");
+    const owner = searchParams.get("owner");
+
+    const now = new Date();
+    const where: any = {
+      organizationId: membership.organizationId,
+      ...(type ? { type } : {}),
+      ...(dealId ? { dealId } : {}),
+    };
+
+    if (owner === "mine") {
+      where.ownerId = user.id;
+    }
+
+    if (due === "today") {
+      where.dueAt = { gte: startOfDay(now), lt: endOfDay(now) };
+    } else if (due === "week") {
+      where.dueAt = { gte: startOfWeek(now), lt: endOfWeek(now) };
+    } else if (due === "overdue") {
+      where.dueAt = { lt: now };
+      where.completedAt = null;
+    }
+
     const activities = await prisma.activity.findMany({
-      where: {
-        organizationId: membership.organizationId,
-        ...(type ? { type } : {}),
-        ...(dealId ? { dealId } : {}),
-      },
+      where,
+      orderBy: { dueAt: "asc" },
+      include: { owner: true },
     });
     return NextResponse.json(activities);
   } catch (e) {
