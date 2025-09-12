@@ -18,7 +18,7 @@ export function handleApiError(error: any): Response {
       headers: { "Content-Type": "application/json" },
     });
   }
-  console.error(error);
+  console.error("API error", error?.message);
   return new Response("Internal Server Error", { status: 500 });
 }
 

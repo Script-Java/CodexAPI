@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole, FileBucket } from "@prisma/client";
+import { rateLimitWrite } from "@/lib/rate-limit";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "application/pdf"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -39,6 +40,13 @@ export async function POST(req: Request) {
       MembershipRole.ADMIN,
       MembershipRole.OWNER
     );
+    const { success } = await rateLimitWrite(req, user.id);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429 }
+      );
+    }
     const form = await req.formData();
     const file = form.get("file") as unknown as File | null;
     const dealId = form.get("dealId")?.toString();

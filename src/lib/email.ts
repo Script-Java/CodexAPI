@@ -17,7 +17,7 @@ export async function sendVerificationEmail(email: string, token: string) {
       }),
     });
   } else {
-    console.log(`Verification link for ${email}: ${verifyUrl}`);
+    console.log("Verification email generated");
   }
 }
 
@@ -80,6 +80,6 @@ export async function sendEmail({
       }),
     });
   } else {
-    console.log(`Email to ${to}: ${subject}\n${text || ""}`);
+    console.log("Email send skipped");
   }
 }
