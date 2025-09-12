@@ -32,6 +32,7 @@ interface TimelineItem {
   activity?: Activity;
   note?: Note;
   fileName?: string;
+  fileUrl?: string;
 }
 
 export default function DealDetailPage() {
@@ -43,17 +44,26 @@ export default function DealDetailPage() {
 
   const fetchData = useCallback(async () => {
     if (!id) return;
-    const [dealRes, actRes, noteRes] = await Promise.all([
+    const [dealRes, actRes, noteRes, fileRes] = await Promise.all([
       fetch(`/api/deals/${id}`),
       fetch(`/api/activities?dealId=${id}`),
       fetch(`/api/notes?dealId=${id}`),
+      fetch(`/api/files?dealId=${id}`),
     ]);
     if (dealRes.ok) setDeal(await dealRes.json());
     const activities: Activity[] = actRes.ok ? await actRes.json() : [];
     const notes: Note[] = noteRes.ok ? await noteRes.json() : [];
+    const files: any[] = fileRes.ok ? await fileRes.json() : [];
     const combined: TimelineItem[] = [
       ...activities.map((a) => ({ id: a.id, kind: 'activity', createdAt: a.createdAt, activity: a })),
       ...notes.map((n) => ({ id: n.id, kind: 'note', createdAt: n.createdAt, note: n })),
+      ...files.map((f) => ({
+        id: f.id,
+        kind: 'file',
+        createdAt: f.createdAt,
+        fileName: f.key.split('/').pop(),
+        fileUrl: `/api/files/${f.id}`,
+      })),
     ];
     setTimeline(
       combined.sort(
@@ -100,16 +110,14 @@ export default function DealDetailPage() {
     });
   };
 
-  const uploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const temp: TimelineItem = {
-      id: 'temp-' + Math.random(),
-      kind: 'file',
-      createdAt: new Date().toISOString(),
-      fileName: file.name,
-    };
-    setTimeline((t) => [temp, ...t]);
+    const form = new FormData();
+    form.append('file', file);
+    form.append('dealId', id);
+    await fetch('/api/files', { method: 'POST', body: form });
+    await fetchData();
   };
 
   return (
@@ -162,7 +170,9 @@ export default function DealDetailPage() {
             )}
             {item.kind === 'file' && (
               <div>
-                <div>Uploaded file: {item.fileName}</div>
+                <div>
+                  Uploaded file: <a className="underline" href={item.fileUrl}>{item.fileName}</a>
+                </div>
                 <div className="text-xs text-gray-500">
                   {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                 </div>
