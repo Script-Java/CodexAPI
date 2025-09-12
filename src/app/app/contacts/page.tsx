@@ -1,3 +1,9 @@
+import ContactsTable from './contacts-table';
+
 export default function ContactsPage() {
-  return <div className="p-4">Contacts Page</div>;
+  return (
+    <div className="p-4">
+      <ContactsTable />
+    </div>
+  );
 }
