@@ -93,6 +93,34 @@ export default function DealDetailPage() {
     });
   };
 
+  const sendEmail = async () => {
+    const to = prompt('To')?.trim();
+    if (!to) return;
+    const subject = prompt('Subject')?.trim();
+    if (!subject) return;
+    const body = prompt('Body')?.trim();
+    if (!body) return;
+    const temp: TimelineItem = {
+      id: 'temp-' + Math.random(),
+      kind: 'activity',
+      createdAt: new Date().toISOString(),
+      activity: {
+        id: '',
+        type: ActivityType.EMAIL,
+        title: subject,
+        note: body,
+        createdAt: new Date().toISOString(),
+      },
+    };
+    setTimeline((t) => [temp, ...t]);
+    await fetch('/api/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, body, dealId: id }),
+    });
+    await fetchData();
+  };
+
   const addNote = async () => {
     const body = prompt('Note')?.trim();
     if (!body) return;
@@ -133,8 +161,8 @@ export default function DealDetailPage() {
           onOpenChange={setCallOpen}
           onLogged={fetchData}
         />
-        <button className="border px-2" onClick={() => logActivity(ActivityType.EMAIL)}>
-          Log Email
+        <button className="border px-2" onClick={sendEmail}>
+          Send Email
         </button>
         <button className="border px-2" onClick={() => logActivity(ActivityType.MEETING)}>
           Schedule Meeting
@@ -155,6 +183,9 @@ export default function DealDetailPage() {
                 <div className="font-medium">
                   {item.activity.type}: {item.activity.title}
                 </div>
+                {item.activity.note && (
+                  <div className="text-sm">{item.activity.note}</div>
+                )}
                 <div className="text-xs text-gray-500">
                   {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                 </div>
