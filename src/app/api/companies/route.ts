@@ -5,6 +5,7 @@ import { companySchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
+import { createAuditLog } from "@/lib/audit";
 
 // GET list of companies & POST create new company
 export async function GET(req: Request) {
@@ -48,6 +49,14 @@ export async function POST(req: Request) {
         organizationId: membership.organizationId,
         ownerId: user.id,
       },
+    });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "CREATE",
+      entityType: "Company",
+      entityId: company.id,
+      after: company,
     });
     return NextResponse.json(company, { status: 201 });
   } catch (e) {

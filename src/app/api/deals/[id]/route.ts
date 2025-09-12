@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { dealSchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
+import { createAuditLog } from "@/lib/audit";
 
 interface Params {
   params: { id: string };
@@ -29,7 +30,7 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function PATCH(req: Request, { params }: Params) {
   try {
-    const { membership } = await requireRole(
+    const { membership, user } = await requireRole(
       MembershipRole.REP,
       MembershipRole.ADMIN,
       MembershipRole.OWNER
@@ -43,6 +44,15 @@ export async function PATCH(req: Request, { params }: Params) {
       where: { id: params.id },
       data,
     });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "UPDATE",
+      entityType: "Deal",
+      entityId: deal.id,
+      before: existing,
+      after: deal,
+    });
     return NextResponse.json(deal);
   } catch (e) {
     return handleApiError(e);
@@ -51,7 +61,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   try {
-    const { membership } = await requireRole(
+    const { membership, user } = await requireRole(
       MembershipRole.ADMIN,
       MembershipRole.OWNER
     );
@@ -60,6 +70,14 @@ export async function DELETE(_req: Request, { params }: Params) {
     });
     if (!existing) return new Response("Not Found", { status: 404 });
     await prisma.deal.delete({ where: { id: params.id } });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "DELETE",
+      entityType: "Deal",
+      entityId: existing.id,
+      before: existing,
+    });
     return new Response(null, { status: 204 });
   } catch (e) {
     return handleApiError(e);

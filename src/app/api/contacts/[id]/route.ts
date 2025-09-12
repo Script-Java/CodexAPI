@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { contactSchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
+import { createAuditLog } from "@/lib/audit";
 
 interface Params {
   params: { id: string };
@@ -11,7 +12,7 @@ interface Params {
 
 export async function PATCH(req: Request, { params }: Params) {
   try {
-    const { membership } = await requireRole(
+    const { membership, user } = await requireRole(
       MembershipRole.REP,
       MembershipRole.ADMIN,
       MembershipRole.OWNER
@@ -25,6 +26,15 @@ export async function PATCH(req: Request, { params }: Params) {
       where: { id: params.id },
       data,
     });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "UPDATE",
+      entityType: "Contact",
+      entityId: contact.id,
+      before: existing,
+      after: contact,
+    });
     return NextResponse.json(contact);
   } catch (e) {
     return handleApiError(e);
@@ -33,7 +43,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   try {
-    const { membership } = await requireRole(
+    const { membership, user } = await requireRole(
       MembershipRole.ADMIN,
       MembershipRole.OWNER
     );
@@ -42,6 +52,14 @@ export async function DELETE(_req: Request, { params }: Params) {
     });
     if (!existing) return new Response("Not Found", { status: 404 });
     await prisma.contact.delete({ where: { id: params.id } });
+    await createAuditLog({
+      organizationId: membership.organizationId,
+      userId: user.id,
+      action: "DELETE",
+      entityType: "Contact",
+      entityId: existing.id,
+      before: existing,
+    });
     return new Response(null, { status: 204 });
   } catch (e) {
     return handleApiError(e);
