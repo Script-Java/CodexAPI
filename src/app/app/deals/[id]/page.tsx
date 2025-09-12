@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { ActivityType } from '@prisma/client';
 import { formatDistanceToNow } from 'date-fns';
+import CallLogDialog from './call-log-dialog';
 
 interface Activity {
   id: string;
@@ -38,30 +39,32 @@ export default function DealDetailPage() {
   const id = params?.id as string;
   const [deal, setDeal] = useState<Deal | null>(null);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [callOpen, setCallOpen] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+    const [dealRes, actRes, noteRes] = await Promise.all([
+      fetch(`/api/deals/${id}`),
+      fetch(`/api/activities?dealId=${id}`),
+      fetch(`/api/notes?dealId=${id}`),
+    ]);
+    if (dealRes.ok) setDeal(await dealRes.json());
+    const activities: Activity[] = actRes.ok ? await actRes.json() : [];
+    const notes: Note[] = noteRes.ok ? await noteRes.json() : [];
+    const combined: TimelineItem[] = [
+      ...activities.map((a) => ({ id: a.id, kind: 'activity', createdAt: a.createdAt, activity: a })),
+      ...notes.map((n) => ({ id: n.id, kind: 'note', createdAt: n.createdAt, note: n })),
+    ];
+    setTimeline(
+      combined.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+    );
+  }, [id]);
 
   useEffect(() => {
-    if (!id) return;
-    const fetchData = async () => {
-      const [dealRes, actRes, noteRes] = await Promise.all([
-        fetch(`/api/deals/${id}`),
-        fetch(`/api/activities?dealId=${id}`),
-        fetch(`/api/notes?dealId=${id}`),
-      ]);
-      if (dealRes.ok) setDeal(await dealRes.json());
-      const activities: Activity[] = actRes.ok ? await actRes.json() : [];
-      const notes: Note[] = noteRes.ok ? await noteRes.json() : [];
-      const combined: TimelineItem[] = [
-        ...activities.map((a) => ({ id: a.id, kind: 'activity', createdAt: a.createdAt, activity: a })),
-        ...notes.map((n) => ({ id: n.id, kind: 'note', createdAt: n.createdAt, note: n })),
-      ];
-      setTimeline(
-        combined.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-      );
-    };
     fetchData();
-  }, [id]);
+  }, [fetchData]);
 
   const logActivity = async (type: ActivityType) => {
     const title = prompt('Title')?.trim();
@@ -113,9 +116,15 @@ export default function DealDetailPage() {
     <div className="p-4 space-y-4">
       {deal && <h1 className="text-2xl font-bold mb-4">{deal.title}</h1>}
       <div className="flex gap-2">
-        <button className="border px-2" onClick={() => logActivity(ActivityType.CALL)}>
+        <button className="border px-2" onClick={() => setCallOpen(true)}>
           Log Call
         </button>
+        <CallLogDialog
+          dealId={id}
+          open={callOpen}
+          onOpenChange={setCallOpen}
+          onLogged={fetchData}
+        />
         <button className="border px-2" onClick={() => logActivity(ActivityType.EMAIL)}>
           Log Email
         </button>
