@@ -39,38 +39,44 @@ export async function POST(request: Request) {
   validateCsrfToken(csrfToken);
 
   const existing = await prisma.user.findUnique({ where: { email: email! } });
-  if (existing) {
-    return NextResponse.json({ error: "Email already in use" }, { status: 400 });
-  }
-
   const hashedPassword = await bcrypt.hash(password!, 10);
   const token = randomUUID();
   const expires = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
 
-  await prisma.user.create({
-    data: {
-      name,
-      email,
-      hashedPassword,
-      memberships: {
-        create: {
-          role: MembershipRole.OWNER,
-          organization: {
-            create: {
-              name: `${name || email!}'s Organization`,
-              slug: `${email!.split("@")[0]}-${Date.now()}`,
-              pipelines: {
-                create: {
-                  name: "Default",
-                  stages: {
-                    create: [
-                      { name: "Lead", order: 1 },
-                      { name: "Qualified", order: 2 },
-                      { name: "Proposal", order: 3 },
-                      { name: "Negotiation", order: 4 },
-                      { name: "Closed Won", order: 5 },
-                      { name: "Closed Lost", order: 6 },
-                    ],
+  if (existing) {
+    if (existing.hashedPassword) {
+      return NextResponse.json({ error: "Email already in use" }, { status: 400 });
+    }
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { name, hashedPassword },
+    });
+  } else {
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        hashedPassword,
+        memberships: {
+          create: {
+            role: MembershipRole.OWNER,
+            organization: {
+              create: {
+                name: `${name || email!}'s Organization`,
+                slug: `${email!.split("@")[0]}-${Date.now()}`,
+                pipelines: {
+                  create: {
+                    name: "Default",
+                    stages: {
+                      create: [
+                        { name: "Lead", order: 1 },
+                        { name: "Qualified", order: 2 },
+                        { name: "Proposal", order: 3 },
+                        { name: "Negotiation", order: 4 },
+                        { name: "Closed Won", order: 5 },
+                        { name: "Closed Lost", order: 6 },
+                      ],
+                    },
                   },
                 },
               },
@@ -78,8 +84,8 @@ export async function POST(request: Request) {
           },
         },
       },
-    },
-  });
+    });
+  }
 
   await prisma.verificationToken.create({
     data: {

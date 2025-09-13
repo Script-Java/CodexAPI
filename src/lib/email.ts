@@ -83,3 +83,13 @@ export async function sendEmail({
     console.log("Email send skipped");
   }
 }
+
+export async function sendInvitationEmail(email: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const url = `${baseUrl}/register?email=${encodeURIComponent(email)}`;
+  await sendEmail({
+    to: email,
+    subject: "You're invited to join",
+    html: `<p>You have been invited to join an organization. <a href="${url}">Create your account</a>.</p>`,
+  });
+}
