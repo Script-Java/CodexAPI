@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ActivityType, DealStatus } from "@prisma/client";
+import { ActivityType, DealStatus, MembershipRole } from "@prisma/client";
 
 /**
  * Central zod schemas used to validate and sanitize
@@ -63,5 +63,19 @@ export const stageSchema = z.object({
   pipelineId: z.string().cuid(),
   name: z.string().trim().min(1),
   order: z.number().int().nonnegative(),
+});
+
+export const organizationSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  slug: z.string().trim().min(1).optional(),
+});
+
+export const inviteSchema = z.object({
+  email: z.string().trim().email(),
+  role: z.nativeEnum(MembershipRole),
+});
+
+export const membershipSchema = z.object({
+  role: z.nativeEnum(MembershipRole),
 });
 
