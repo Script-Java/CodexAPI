@@ -5,6 +5,8 @@ import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
 import { rateLimitSearch } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export async function GET(req: Request) {
   try {
     const { membership, user } = await requireRole(

@@ -5,6 +5,8 @@ import { handleApiError } from "@/lib/api";
 import { membershipSchema } from "@/lib/validators";
 import { MembershipRole } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const { membership } = await requireRole(MembershipRole.OWNER);

@@ -6,6 +6,8 @@ import { handleApiError } from "@/lib/api";
 import { MembershipRole, FileBucket } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "application/pdf"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 

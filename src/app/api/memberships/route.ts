@@ -6,6 +6,8 @@ import { inviteSchema } from "@/lib/validators";
 import { MembershipRole } from "@prisma/client";
 import { sendInvitationEmail } from "@/lib/email";
 
+export const runtime = "nodejs";
+
 export async function GET() {
   try {
     const { membership } = await requireRole(MembershipRole.OWNER);

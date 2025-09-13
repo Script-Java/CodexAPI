@@ -4,6 +4,8 @@ import { MembershipRole } from "@prisma/client";
 import { handleApiError } from "@/lib/api";
 import { pipelineValueByStage } from "@/lib/reports";
 
+export const runtime = "nodejs";
+
 export async function GET(req: Request) {
   try {
     const { membership } = await requireRole(

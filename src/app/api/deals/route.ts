@@ -7,6 +7,8 @@ import { MembershipRole, DealStatus } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
 
+export const runtime = "nodejs";
+
 export async function GET(req: Request) {
   try {
     const { membership } = await requireRole(

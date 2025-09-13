@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
