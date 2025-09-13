@@ -6,8 +6,58 @@ import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
+import { cache } from "react";
 
 export const runtime = "nodejs";
+
+const fetchContacts = cache(
+  async (
+    organizationId: string,
+    q: string | undefined,
+    skip: number,
+    take: number
+  ) =>
+    prisma.contact.findMany({
+      where: {
+        organizationId,
+        ...(q
+          ? {
+              OR: [
+                { firstName: { contains: q, mode: "insensitive" } },
+                { lastName: { contains: q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      },
+      skip,
+      take,
+      orderBy: { lastName: "asc" },
+    })
+);
+
+const countContacts = cache(
+  async (organizationId: string, q: string | undefined) =>
+    prisma.contact.count({
+      where: {
+        organizationId,
+        ...(q
+          ? {
+              OR: [
+                { firstName: { contains: q, mode: "insensitive" } },
+                { lastName: { contains: q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+    })
+);
 
 export async function GET(req: Request) {
   try {
@@ -18,20 +68,14 @@ export async function GET(req: Request) {
     );
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q") ?? undefined;
-    const contacts = await prisma.contact.findMany({
-      where: {
-        organizationId: membership.organizationId,
-        ...(q
-          ? {
-              OR: [
-                { firstName: { contains: q, mode: "insensitive" } },
-                { lastName: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
-    });
-    return NextResponse.json(contacts);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const skip = (page - 1) * limit;
+    const [contacts, total] = await Promise.all([
+      fetchContacts(membership.organizationId, q, skip, limit),
+      countContacts(membership.organizationId, q),
+    ]);
+    return NextResponse.json({ data: contacts, total });
   } catch (e) {
     return handleApiError(e);
   }
