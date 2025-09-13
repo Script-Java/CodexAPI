@@ -13,6 +13,8 @@ import {
   endOfWeek,
 } from "date-fns";
 
+export const runtime = "nodejs";
+
 export async function GET(req: Request) {
   try {
     const { membership, user } = await requireRole(

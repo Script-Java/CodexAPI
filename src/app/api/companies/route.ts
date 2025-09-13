@@ -7,6 +7,8 @@ import { MembershipRole } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
 
+export const runtime = "nodejs";
+
 // GET list of companies & POST create new company
 export async function GET(req: Request) {
   try {

@@ -7,6 +7,8 @@ import { sendEmail } from "@/lib/email";
 import { rateLimitWrite } from "@/lib/rate-limit";
 import { z } from "zod";
 
+export const runtime = "nodejs";
+
 const schema = z.object({
   to: z.string().email(),
   subject: z.string().trim().min(1),

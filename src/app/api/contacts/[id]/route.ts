@@ -6,6 +6,8 @@ import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
 import { createAuditLog } from "@/lib/audit";
 
+export const runtime = "nodejs";
+
 interface Params {
   params: { id: string };
 }

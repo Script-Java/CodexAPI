@@ -35,25 +35,25 @@ export async function sendEmail({
   text,
 }: SendEmailOptions) {
   if (
-    process.env.ZOHO_SMTP_HOST &&
-    process.env.ZOHO_SMTP_USER &&
-    process.env.ZOHO_SMTP_PASS
+    process.env.EMAIL_SERVER_HOST &&
+    process.env.EMAIL_SERVER_USER &&
+    process.env.EMAIL_SERVER_PASSWORD
   ) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       // @ts-ignore
       const nodemailer = require("nodemailer");
       const transporter = nodemailer.createTransport({
-        host: process.env.ZOHO_SMTP_HOST,
-        port: Number(process.env.ZOHO_SMTP_PORT) || 465,
+        host: process.env.EMAIL_SERVER_HOST,
+        port: Number(process.env.EMAIL_SERVER_PORT) || 465,
         secure: true,
         auth: {
-          user: process.env.ZOHO_SMTP_USER,
-          pass: process.env.ZOHO_SMTP_PASS,
+          user: process.env.EMAIL_SERVER_USER,
+          pass: process.env.EMAIL_SERVER_PASSWORD,
         },
       });
       await transporter.sendMail({
-        from: process.env.ZOHO_SMTP_FROM || process.env.ZOHO_SMTP_USER,
+        from: process.env.EMAIL_FROM || process.env.EMAIL_SERVER_USER,
         to,
         subject,
         html,

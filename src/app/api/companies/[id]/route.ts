@@ -5,6 +5,8 @@ import { companySchema } from "@/lib/validators";
 import { handleApiError } from "@/lib/api";
 import { MembershipRole } from "@prisma/client";
 
+export const runtime = "nodejs";
+
 interface Params {
   params: { id: string };
 }
