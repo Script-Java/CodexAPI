@@ -162,6 +162,7 @@ model Contact {
 
   @@index([organizationId])
   @@index([email])
+  @@index([organizationId, lastName, firstName])
 }
 
 model Pipeline {
@@ -221,6 +222,7 @@ model Deal {
   @@index([ownerId])
   @@index([stageId])
   @@index([status])
+  @@index([organizationId, pipelineId, stageId])
 }
 
 model Activity {

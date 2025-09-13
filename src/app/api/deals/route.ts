@@ -6,8 +6,53 @@ import { handleApiError } from "@/lib/api";
 import { MembershipRole, DealStatus } from "@prisma/client";
 import { rateLimitWrite } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
+import { cache } from "react";
 
 export const runtime = "nodejs";
+
+const fetchDeals = cache(
+  async (
+    organizationId: string,
+    status: DealStatus | null,
+    pipelineId: string | undefined,
+    skip: number,
+    take: number
+  ) =>
+    prisma.deal.findMany({
+      where: {
+        organizationId,
+        ...(status ? { status } : {}),
+        ...(pipelineId ? { pipelineId } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        valueCents: true,
+        stageId: true,
+        createdAt: true,
+        company: { select: { name: true } },
+        contact: { select: { firstName: true, lastName: true } },
+        owner: { select: { name: true, email: true } },
+      },
+      skip,
+      take,
+    })
+);
+
+const countDeals = cache(
+  async (
+    organizationId: string,
+    status: DealStatus | null,
+    pipelineId: string | undefined
+  ) =>
+    prisma.deal.count({
+      where: {
+        organizationId,
+        ...(status ? { status } : {}),
+        ...(pipelineId ? { pipelineId } : {}),
+      },
+    })
+);
 
 export async function GET(req: Request) {
   try {
@@ -19,15 +64,14 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") as DealStatus | null;
     const pipelineId = searchParams.get("pipelineId") ?? undefined;
-    const deals = await prisma.deal.findMany({
-      where: {
-        organizationId: membership.organizationId,
-        ...(status ? { status } : {}),
-        ...(pipelineId ? { pipelineId } : {}),
-      },
-      include: { company: true, contact: true, owner: true },
-    });
-    return NextResponse.json(deals);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const skip = (page - 1) * limit;
+    const [deals, total] = await Promise.all([
+      fetchDeals(membership.organizationId, status, pipelineId, skip, limit),
+      countDeals(membership.organizationId, status, pipelineId),
+    ]);
+    return NextResponse.json({ data: deals, total });
   } catch (e) {
     return handleApiError(e);
   }

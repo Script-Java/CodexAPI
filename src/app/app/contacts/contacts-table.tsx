@@ -5,8 +5,6 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
@@ -46,6 +44,11 @@ export default function ContactsTable() {
   const [sorting, setSorting] = useState<any[]>([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [globalFilter, setGlobalFilter] = useState('');
+  const [{ pageIndex, pageSize }, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [pageCount, setPageCount] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Contact | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,31 +104,38 @@ export default function ContactsTable() {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnVisibility, globalFilter },
+    state: { sorting, columnVisibility, globalFilter, pagination: { pageIndex, pageSize } },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
+    manualPagination: true,
+    manualFiltering: true,
+    pageCount,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const fetchContacts = async (q?: string) => {
-    const res = await fetch('/api/contacts' + (q ? `?q=${encodeURIComponent(q)}` : ''));
+  const fetchContacts = async (q: string, page: number, limit: number) => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    const res = await fetch('/api/contacts?' + params.toString());
     if (res.ok) {
       const json = await res.json();
-      setData(json);
+      setData(json.data);
+      setPageCount(Math.ceil(json.total / limit));
     }
   };
 
   useEffect(() => {
-    fetchContacts(globalFilter);
-  }, [globalFilter]);
+    fetchContacts(globalFilter, pageIndex + 1, pageSize);
+  }, [globalFilter, pageIndex, pageSize]);
 
   const deleteContact = async (id: string) => {
     await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
-    fetchContacts(globalFilter);
+    fetchContacts(globalFilter, pageIndex + 1, pageSize);
   };
 
   const startCreate = () => {
@@ -164,7 +174,7 @@ export default function ContactsTable() {
             )
           );
         }
-        fetchContacts(globalFilter);
+        fetchContacts(globalFilter, pageIndex + 1, pageSize);
       },
     });
   };
@@ -272,7 +282,7 @@ export default function ContactsTable() {
         open={formOpen}
         onOpenChange={setFormOpen}
         initialData={editing}
-        onSaved={() => fetchContacts(globalFilter)}
+        onSaved={() => fetchContacts(globalFilter, pageIndex + 1, pageSize)}
       />
     </div>
   );

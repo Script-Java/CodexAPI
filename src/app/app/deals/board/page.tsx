@@ -45,8 +45,11 @@ export default function DealsBoardPage() {
   useEffect(() => {
     if (!pipeline) return;
     const fetchDeals = async () => {
-      const res = await fetch(`/api/deals?pipelineId=${pipeline.id}`);
-      if (res.ok) setDeals(await res.json());
+      const res = await fetch(`/api/deals?pipelineId=${pipeline.id}&limit=500`);
+      if (res.ok) {
+        const json = await res.json();
+        setDeals(json.data);
+      }
     };
     fetchDeals();
   }, [pipeline]);
